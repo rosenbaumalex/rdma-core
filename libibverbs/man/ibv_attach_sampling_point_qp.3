@@ -1,0 +1,128 @@
+.\" -*- nroff -*-
+.\" Licensed under the OpenIB.org BSD license (FreeBSD Variant) - See COPYING.md
+.\"
+.TH IBV_ATTACH_SAMPLE_POINT 3 2017-11-06 libibverbs "Libibverbs Programmer's Manual"
+.SH "NAME"
+ibv_attach_sampling_point \- attach individual counter definition and/or attached them to a verbs object
+.sp
+ibv_detach_sampling_point \- detach individual counter definition
+.SH "SYNOPSIS"
+.nf
+.B #include <infiniband/verbs.h>
+.sp
+.BI "int ibv_attach_sampling_point_qp(struct ibv_counters " "*counters" ", int " "index" ", struct ibv_qp " "*qp" ", enum ibv_counter_type " "counter_type");
+.sp 
+.BI "int ibv_attach_sampling_point_wq(struct ibv_counters " "*counters" ", int " "index" ", struct ibv_wq " "*wp" ", enum ibv_counter_type " "counter_type");
+.sp 
+.BI "int ibv_attach_sampling_point_flow(struct ibv_counters " "*counters" ", int " "index" ", struct ibv_flow " "*flow" ", enum ibv_counter_type " "counter_type");
+.sp
+.BI "int ibv_detach_sampling_point(struct ibv_counters " "*counters" ", int " "index");
+.fi
+.SH "DESCRIPTION"
+Attach sampling point family of API's will start collecting values of counter type
+.I counter_type\fR,
+which are reported from the relevant verbs object, into location
+.I index
+in the
+.I counters
+object. Each sampling point
+.I index
+location is a monotonically increasing value.
+.sp
+.B ibv_attach_sampling_point_qp()
+will start collecting values which are reported from the
+.I qp\fR.
+This allows dynamic attaching and detaching of sampling points. See the specific attach sampling point API's for: WQ and flow. 
+.sp
+A static attach can be created when NULL is provided instead of the referance to the verbs object (e.g.: NULL instead of
+.I qp\fR,
+.I wq\fR
+or
+.I flow\fR).
+In this case, this
+.I counters
+object will only start collecting values after it is bound to the verbs resource. For QP, this is when referencing the
+.I counters
+handle when creating a QP with
+.B ibv_create_qp_ex()\fR.
+Similarly, when referencing the
+.I counters
+handle when calling verbs create and/or modify API's for: WQ and flow.
+Once an ibv_counters is bound statically to a verbs resource, no additional
+.I counter_type
+can be attached or index's detached from it until it is unbound from all verbs resource.
+.sp
+The argument 
+.I counter_type
+specifies which counter value should be collected. It is defined in verbs.h as one of the enum
+.I ibv_counter_type
+options. Additional
+.I counter_type
+values can be found for each specific provider header file.
+.sp 
+Supported capabilties of specific
+.I counter_type\fR's
+values per verbs object can be tested by checking the return value for success or ENOSUP errno.
+.sp
+Attaching a
+.I counters
+hanlde to multiple objects of the same type will accumulate the values into a single index. e.g.: creating several ibv_flow's with the same ibv_counters handle will collect the values from all relevant flows into the relevant
+.I index
+locaiton when reading the values from
+.B ibv_read_counters()\fR.
+.sp
+The runtime values of
+.I counters
+can be read from the hardware by calling
+.B ibv_read_counters()\fR.
+.sp
+.B ibv_detach_sampling_point() 
+on a dynamically attached ibv_counters will detaches the location
+.I index
+of the
+.I counters
+object from the respectful verbs object.
+.sp
+Detaching a sampling point clears the value reported, the counter_type in that
+.I index
+location.
+.SH "RETURN VALUE"
+.B ibv_attach_sampling_point_qp()\fR,
+.B ibv_attach_sampling_point_wq()\fR,
+.B ibv_attach_sampling_point_flow()\fR,
+and
+.B ibv_detach_sampling_point()
+returns 0 on success, or the value of errno on failure (which indicates the failure reason).
+.SH "ERRORS"
+.SS EINVAL
+counters is invalid
+.SS ENOSUP
+counter_type is not supported on the requested object
+.SS ENOMEM
+Couldn't attach sampling point to counters at location index, not enough memory
+.SH "NOTES"
+Counter values in each
+.I index
+location are cleared upon creation when calling
+.B ibv_create_counters()\fR.
+Attaching and detaching sampling points will only increase these value accordingly.
+.sp
+.B ibv_destroy_counters()
+can be called to release all 
+.I counters 
+indexes at once instead of iterating with 
+.B ibv_detach_sampling_point()\fR.
+.SH EXAMPLE
+An example of the use of
+.I ibv_counters
+is shown in
+.BR ibv_read_counters (3).
+.SH "SEE ALSO"
+.BR ibv_create_counters (3),
+.BR ibv_destroy_counters (3),
+.BR ibv_read_counters (3),
+.BR ibv_create_flow (3),
+.BR ibv_create_qp_ex (3),
+.SH "AUTHORS"
+.TP
+Alex Rosenbaum <rosenbaumalex@gmail.com>

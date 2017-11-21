@@ -1,0 +1,82 @@
+.\" -*- nroff -*-
+.\" Licensed under the OpenIB.org BSD license (FreeBSD Variant) - See COPYING.md
+.\"
+.TH IBV_CREATE_COUNTERS 3 2017-11-06 libibverbs "Libibverbs Programmer's Manual"
+.SH "NAME"
+ibv_create_counters, ibv_destroy_counters \- create or destroy a counters handle
+.SH "SYNOPSIS"
+.nf
+.B #include <infiniband/verbs.h>
+.sp
+.BI "struct ibv_counters *ibv_create_counters(struct ibv_context " "*context");
+.sp
+.BI "int ibv_destroy_counters(struct ibv_counters " "*counters");
+.fi
+.SH "DESCRIPTION"
+.B ibv_create_counters()
+creates a new counters handle for the RDMA device context 
+.I context\fR.
+.sp
+An
+.I ibv_counters 
+handle can be attached to a verbs resource (e.g.: QP, WQ, flow) statically when these are created, or it can be attached and detached dynamically to a verbs resource during the active life cycle of that object.
+.sp
+Attach an 
+.I ibv_counters
+statically to a QP  (
+.I struct ibv_qp\fR)
+during creation of a new QP by calling
+.B ibv_create_qp_ex()\fR.
+Similarly, there are verbs to create and/or modify API's for: WQ and flow.
+.sp 
+Alternatively, the
+.I ibv_counters
+handle can be attached dynamically with a valid QP
+via the 
+.B ibv_attach_sampling_point_qp()\fR,
+or attached to a valid WQ with 
+.B ibv_attach_sampling_point_wq()\fR,
+or attached to a valid flow with 
+.B ibv_attach_sampling_point_flow()\fR.
+These can be dynamically detached with
+.B ibv_detach_sampling_point()\fR.
+.sp
+Counters are cleared upon creation and values will be monotonically increasing.
+.sp
+.B ibv_destroy_counters()
+releases the counters handle 
+.I counters 
+and will detached the counters from any other resource.
+.SH "RETURN VALUE"
+.B ibv_create_counters() 
+returns a pointer to the allocated ibv_counters object, or NULL if the request fails (and sets errno to indicates the failure reason).
+.sp
+.B ibv_destroy_counters() 
+returns 0 on success, or the value of errno on failure (which indicates the failure reason).
+.SH "ERRORS"
+.SS ENXIO
+.B ibv_create_counters()
+isn't currently supported on this device
+.SS ENOMEM
+.B ibv_create_counters()
+couldn't create ibv_counters object, not enough memory
+.SS EINVAL
+.B ibv_destroy_counters()
+counters is invalid
+.SH EXAMPLE
+An example of the use of
+.I ibv_counters
+is shown in
+.BR ibv_read_counters (3).
+.SH "SEE ALSO"
+.BR ibv_attach_sampling_point_qp (3),
+.BR ibv_attach_sampling_point_wq (3),
+.BR ibv_attach_sampling_point_flow (3),
+.sp
+.BR ibv_detach_sampling_point (3),
+.BR ibv_read_counters (3),
+.BR ibv_create_flow (3),
+.BR ibv_create_qp_ex (3),
+.SH "AUTHORS"
+.TP
+Alex Rosenbaum <rosenbaumalex@gmail.com>

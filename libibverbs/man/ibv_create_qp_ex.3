@@ -31,7 +31,7 @@ struct ibv_srq         *srq;            /* SRQ handle if QP is to be associated 
 struct ibv_qp_cap       cap;            /* QP capabilities */
 enum ibv_qp_type        qp_type;        /* QP Transport Service Type: IBV_QPT_RC, IBV_QPT_UC, IBV_QPT_UD or IBV_QPT_RAW_PACKET */
 int                     sq_sig_all;     /* If set, each Work Request (WR) submitted to the SQ generates a completion entry */
-uint32_t                comp_mask;	/* Identifies valid fields */
+uint32_t                comp_mask;	/* Identifies valid fields as defined in ibv_qp_init_attr_mask */
 struct ibv_pd          *pd;		/* PD to be associated with the QP */
 struct ibv_xrcd        *xrcd;		/* XRC domain to be associated with the target QP */
 enum ibv_qp_create_flags create_flags;	/* Creation flags for this QP */
@@ -39,6 +39,7 @@ uint16_t                max_tso_header; /* Maximum TSO header size */
 struct ibv_rwq_ind_table *rwq_ind_tbl;  /* Indirection table to be associated with the QP */
 struct ibv_rx_hash_conf  rx_hash_conf;  /* RX hash configuration to be used */
 uint32_t                source_qpn;     /* Source QP number, creation flag IBV_QP_CREATE_SOURCE_QPN should be set, few NOTEs below */
+struct ibv_counters    *counters;       /* attach an ibv_counters object to this QP with a set of sampling points */
 .in -8
 };
 .sp
@@ -105,6 +106,7 @@ fails if the QP is attached to a multicast group.
 .BR ibv_modify_qp (3),
 .BR ibv_query_qp (3),
 .BR ibv_create_rwq_ind_table (3)
+.BR ibv_create_counters (3)
 .SH "AUTHORS"
 .TP
 Yishai Hadas <yishaih@mellanox.com>

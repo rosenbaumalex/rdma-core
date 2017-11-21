@@ -1,4 +1,4 @@
-/*
+*
  * Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved.
  * Copyright (c) 2004, 2011-2012 Intel Corporation.  All rights reserved.
  * Copyright (c) 2005, 2006, 2007 Cisco Systems, Inc.  All rights reserved.
@@ -727,7 +727,8 @@ enum ibv_wq_type {
 
 enum ibv_wq_init_attr_mask {
 	IBV_WQ_INIT_ATTR_FLAGS		= 1 << 0,
-	IBV_WQ_INIT_ATTR_RESERVED	= 1 << 1,
+	IBV_WQ_INIT_ATTR_ATTACH_COUNTERS= 1 << 1,
+	IBV_WQ_INIT_ATTR_RESERVED	= 1 << 2,
 };
 
 enum ibv_wq_flags {
@@ -747,6 +748,7 @@ struct ibv_wq_init_attr {
 	struct	ibv_cq	       *cq;
 	uint32_t		comp_mask; /* Use ibv_wq_init_attr_mask */
 	uint32_t		create_flags; /* use ibv_wq_flags */
+	struct ibv_counters    *counters;
 };
 
 enum ibv_wq_state {
@@ -836,7 +838,8 @@ enum ibv_qp_init_attr_mask {
 	IBV_QP_INIT_ATTR_MAX_TSO_HEADER = 1 << 3,
 	IBV_QP_INIT_ATTR_IND_TABLE	= 1 << 4,
 	IBV_QP_INIT_ATTR_RX_HASH	= 1 << 5,
-	IBV_QP_INIT_ATTR_RESERVED	= 1 << 6
+	IBV_QP_INIT_ATTR_ATTACH_COUNTERS= 1 << 6,
+	IBV_QP_INIT_ATTR_RESERVED	= 1 << 7
 };
 
 enum ibv_qp_create_flags {
@@ -873,6 +876,7 @@ struct ibv_qp_init_attr_ex {
 	struct ibv_rwq_ind_table       *rwq_ind_tbl;
 	struct ibv_rx_hash_conf	rx_hash_conf;
 	uint32_t		source_qpn;
+	struct ibv_counters    *counters;
 };
 
 enum ibv_qp_open_attr_mask {
@@ -1370,6 +1374,7 @@ enum ibv_flow_spec_type {
 	IBV_FLOW_SPEC_INNER		= 0x100,
 	IBV_FLOW_SPEC_ACTION_TAG	= 0x1000,
 	IBV_FLOW_SPEC_ACTION_DROP	= 0x1001,
+	IBV_FLOW_SPEC_ACTION_COUNT	= 0x1002,
 };
 
 struct ibv_flow_eth_filter {
@@ -1465,6 +1470,12 @@ struct ibv_flow_spec_action_tag {
 struct ibv_flow_spec_action_drop {
 	enum ibv_flow_spec_type  type;
 	uint16_t  size;
+};
+
+struct ibv_flow_spec_action_count {
+	enum ibv_flow_spec_type  type;
+	uint16_t  size;
+	struct ibv_counters* counters;
 };
 
 struct ibv_flow_spec {
@@ -2529,6 +2540,53 @@ static inline int ibv_is_qpt_supported(uint32_t caps, enum ibv_qp_type qpt)
 {
 	return !!(caps & (1 << qpt));
 }
+
+struct ibv_counters {
+	struct ibv_context *context;
+};
+
+
+enum ibv_counter_type {
+	/* good events */
+	IBV_COUNTER_TX_PACKETS,
+	IBV_COUNTER_TX_BYTES,
+	IBV_COUNTER_RX_PACKETS,
+	IBV_COUNTER_RX_BYTES,
+	IBV_COUNTER_RX_READ_REQUESTS,
+	IBV_COUNTER_RX_WRITE_REQUESTS,
+	IBV_COUNTER_RX_ATOMIC_REQUESTS,
+
+	/* error events */
+	IBV_COUNTER_OUT_OF_BUFFER_EVENTS,
+	IBV_COUNTER_CQ_OVERFLOW_EVENTS,
+	IBV_COUNTER_RNR_NAK_RETRY_ERR,
+	IBV_COUNTER_RESP_RNR_NAK,
+	/* need to complete list for IB spec complient, and the rest should go into vendor specific headers */
+};
+
+struct ibv_counter_init_attr {
+	int flags;
+};
+
+struct ibv_counter_attach_attr {
+	enum ibv_counter_type counter_type;
+	int index;
+	int flags;
+};
+
+struct ibv_counters *ibv_create_counters(struct ibv_context *context, struct ibv_counter_init_attr *attr);
+
+int ibv_destroy_counters(struct ibv_counters *counters);
+
+int ibv_attach_sampling_point_qp(struct ibv_counters *counters, struct ibv_counter_attach_attr *attr, struct ibv_qp *qp);
+
+int ibv_attach_sampling_point_wq(struct ibv_counters *counters, struct ibv_counter_attach_attr *attr, struct ibv_wq *wq);
+
+int ibv_attach_sampling_point_flow(struct ibv_counters *counters, struct ibv_counter_attach_attr *attr, struct ibv_flow *flow);
+
+int ibv_detach_sampling_point(struct ibv_counters *counters, int index);
+
+int ibv_read_counters(struct ibv_counters *counters, size_t ncounters, uint64_t counters_value[], int attr_flags);
 
 #ifdef __cplusplus
 }

@@ -70,6 +70,7 @@ IBV_FLOW_SPEC_VXLAN_TUNNEL             	= 0x50,   /* Flow specification of VXLAN
 IBV_FLOW_SPEC_INNER                    	= 0x100,  /* Flag making L2/L3/L4 specifications to be applied on the inner header */
 IBV_FLOW_SPEC_ACTION_TAG                = 0x1000, /* Action tagging matched packet */
 IBV_FLOW_SPEC_ACTION_DROP               = 0x1001, /* Action dropping matched packet */
+IBV_FLOW_SPEC_ACTION_COUNT              = 0x1002, /* Action count matched packet with a ibv_counters handle */
 .in -8
 };
 .br
@@ -205,6 +206,8 @@ struct raw_eth_flow_attr flow_attr = {
 };
 .sp
 .nf
+.SH "SEE ALSO"
+.BR ibv_create_counters (3)
 .SH "AUTHORS"
 .TP
 Hadar Hen Zion <hadarh@mellanox.com>

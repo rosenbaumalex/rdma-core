@@ -1,0 +1,219 @@
+.\" -*- nroff -*-
+.\" Licensed under the OpenIB.org BSD license (FreeBSD Variant) - See COPYING.md
+.\"
+.TH IBV_READ_COUNTERS 3 2017-11-06 libibverbs "Libibverbs Programmer's Manual"
+.SH "NAME"
+ibv_read_counters \- read counter values
+.SH "SYNOPSIS"
+.nf
+.B #include <infiniband/verbs.h>
+.sp
+.BI "int ibv_read_counters(struct ibv_counters " "*counters" ", size_t " "ncounters" ", uint64_t " "counters_value[]" ", int " "attr_flags" );
+.fi
+.SH "DESCRIPTION"
+.B ibv_read_counters() 
+returns the values of the chosen 
+.I counters 
+into 
+.I counter_values 
+array of size 
+.I ncounters\fR. 
+The values are filled according to the configuration defined by user in the 
+.B ibv_attach_sampling_point 
+functions.
+.sp
+The argument
+.I attr_flags
+can have the following flag:
+.sp
+.B IBV_COUNTER_READ_ATTR_PREFER_CACHED
+will prefer reading the values from driver cache, else it will do volatile hardware access which is the default.
+.SH "RETURN VALUE"
+.B ibv_read_counters() 
+returns 0 on success, or the value of errno on failure (which indicates the failure reason).
+.sp
+.SH EXAMPLE
+.B Example 1: Statically attach counters to a new flow
+.sp
+This first example demonstrates the use of counters which are attached staticcally with the creation of a new flow. The counters are read from hardware periodicattly, and finally all resources are released.
+.PP
+.nf
+/* create counters object and define its sampling points        */
+/* create simple L2 flow with hardcoded MAC, and a count action */
+/* read counters periodically, every 1sec, until loop ends      */
+/* assumes user prepared a RAW_PACKET QP as input               */
+/* only limited error checking in run time for code simplicity  */
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#include <infiniband/verbs.h>
+
+/* the below MAC should be replaced by user */
+#define FLOW_SPEC_ETH_MAC_VAL {
+        .dst_mac = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
+        .src_mac = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+        .ether_type = 0, .vlan_tag = 0, }
+#define FLOW_SPEC_ETH_MAC_MASK {
+        .dst_mac = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+        .src_mac = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+        .ether_type = 0, .vlan_tag = 0, }
+
+void example_create_flow_with_counters_on_raw_qp(struct ibv_qp *qp)
+{
+.in +8
+int idx = 0;
+int loop = 1000;
+struct ibv_flow* flow = NULL;
+struct ibv_counters* counters = NULL;
+
+/* create single coutners handle */
+counters = ibv_create_counters(qp->context);
+
+/* define counters sampling points */
+ret = ibv_attach_sampling_point_flow(counters, idx++, NULL, IBV_COUNTER_RX_PACKETS);
+if (ret == ENOTSUP) {
+	fprintf(stderr, "Attaching IBV_COUNTER_RX_PACKETS to flow is not supported\en");
+	exit(1);
+}
+ibv_attach_sampling_point_flow(counters, idx++, NULL, IBV_COUNTER_RX_BYTES);
+if (ret == ENOTSUP) {
+	fprintf(stderr, "Attaching IBV_COUNTER_RX_BYTES to flow is not supported\en");
+	exit(1);
+}
+
+/* define a new flow attr that includes the counters handle */
+struct raw_eth_flow_attr {
+	struct ibv_flow_attr              attr;
+	struct ibv_flow_spec_eth          spec_eth;
+	struct ibv_flow_spec_action_count spec_count;
+} __attribute__((packed)) flow_attr = {
+	.attr = {
+		.comp_mask  = 0,
+		.type       = IBV_FLOW_ATTR_NORMAL,
+		.size       = sizeof(flow_attr),
+		.priority   = 0,
+		.num_of_specs = 2, /* ETH + COUNT */
+		.port       = 1,
+		.flags      = 0,
+	},
+	.spec_eth = {
+		.type = IBV_EXP_FLOW_SPEC_ETH,
+		.size = sizeof(struct ibv_flow_spec_eth),
+		.val  = FLOW_SPEC_ETH_MAC_VAL,
+		.mask = FLOW_SPEC_ETH_MAC_MASK,
+	},
+	.spec_count = {
+		.type   = IBV_FLOW_SPEC_ACTION_COUNT,
+		.size   = sizeof(struct ibv_flow_spec_action_count),
+		.counters = counters, /* attached this counters handle to the newly created ibv_flow */
+	}
+};
+
+/* create the flow */
+flow = ibv_create_flow(qp, &flow_attr.attr);
+
+/* allocate array for counters value reading */
+uint64_t *counters_value = malloc(sizeof(uint64_t) * idx);
+
+/* periodical read and print of flow counters */
+while (--loop) {
+	sleep(1);
+
+	/* read hardware counters values */
+	ibv_read_counters(counters, idx, counters_value, 0);
+
+	printf("RX_PACKETS = %"PRIu64", RX_BYTES = %"PRIu64", TX_PACKETS = %"PRIu64", TX_BYTES = %"PRIu64" \en",
+			counters_value[0], counters_value[1], counters_value[2], counters_value[3] );
+}
+
+/* all done, release all */
+free(counters_value);
+
+/* destory flow and detach counters */
+ibv_destroy_flow(flow);
+
+/* destroy counters handle */
+ibv_destroy_counters(counters);
+
+return;
+.in -8
+}
+.fi
+.PP
+.sp
+.SS Example 2: Dynamically attach counters with QP's
+The second example demostates how to dynamically attach and detach a counter with active multiple QP's. 
+.sp
+.PP
+.nf
+/* attach counters to all QP's with defined sampling points  */
+/* read counters periodically, every 1sec, until loop ends   */
+/* assumes user prepared few QP's as input                   */
+/* no error checking in run time for example code simplicity */
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#include <infiniband/verbs.h>
+
+void example_monitor_all_qps(int num_qps, struct ibv_qp** qp, enum ibv_counter_type counter_type)
+{
+.in +8
+int idx = 0;
+int loop = 1000;
+
+struct ibv_counters* counters = NULL;
+
+/* create single coutners handle */
+counters = ibv_create_counters(qp[0]->context);
+
+/* attach sampling points on all qp's */
+for (idx=0; idx<num_qps; idx++) {
+	if (qp[idx]->context != qp[0]->context)
+		exit(1);
+
+	ibv_attach_sampling_point_qp(counters, idx, qp[idx], counter_type);
+}
+
+/* allocate array for counters value reading */
+uint64_t *counters_value = malloc(sizeof(uint64_t) * num_qps);
+
+/* periodical read and print of qp counters */
+while (--loop) {
+	sleep(1);
+
+	/* read hardware counters values */
+	ibv_read_counters(counters, idx, counters_value, 0);
+
+	printf("Counter %d: \en", counter_type);
+	for (idx=0; idx<num_qps; idx++) {
+		printf("QP[%d] = %"PRIu64" \en", idx, counters_value[idx]);
+	}
+	printf("======================\en");
+}
+
+/* all done, release all */
+free(counters_value);
+
+/* destroy counters handle */
+ibv_destroy_counters(counters);
+
+return;
+.in -8
+}
+.fi
+.PP
+.sp
+.SH "SEE ALSO"
+.BR ibv_create_counters (3),
+.BR ibv_destroy_counters (3),
+.sp
+.BR ibv_attach_sampling_point_qp (3),
+.BR ibv_attach_sampling_point_wq (3),
+.BR ibv_attach_sampling_point_flow (3),
+.sp
+.BR ibv_detach_sampling_point (3),
+.BR ibv_create_flow (3),
+.BR ibv_create_qp_ex (3),
+.SH "AUTHORS"
+.TP
+Alex Rosenbaum <rosenbaumalex@gmail.com>

@@ -30,11 +30,11 @@ uint32_t                   max_wr;        /* Requested max number of outstanding
 uint32_t                   max_sge;       /* Requested max number of scatter/gather (s/g) elements per WR in the WQ */
 struct  ibv_pd            *pd;            /* PD to be associated with the WQ */
 struct  ibv_cq            *cq;            /* CQ to be associated with the WQ */
-uint32_t                   comp_mask;     /* Identifies valid fields. Use ibv_wq_init_attr_mask */
-uint32_t                   create_flags    /* Creation flags for this WQ, use enum ibv_wq_flags */
+uint32_t                   comp_mask;      /* Identifies valid fields. Use ibv_wq_init_attr_mask */
+uint32_t                   create_flags;  /* Creation flags for this WQ, use enum ibv_wq_flags */
+struct ibv_counters       *counters;      /* Attach an ibv_counters object to this WQ with a set of sampling points */
 .in -8
 };
-
 .sp
 .nf
 enum ibv_wq_flags {
@@ -69,6 +69,7 @@ returns a pointer to the created WQ, or NULL if the request fails.
 returns 0 on success, or the value of errno on failure (which indicates the failure reason).
 .SH "SEE ALSO"
 .BR ibv_modify_wq (3),
+.BR ibv_create_counters (3)
 .SH "AUTHORS"
 .TP
 Yishai Hadas <yishaih@mellanox.com>
