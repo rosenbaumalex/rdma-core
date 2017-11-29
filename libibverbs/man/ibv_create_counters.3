@@ -8,7 +8,7 @@ ibv_create_counters, ibv_destroy_counters \- create or destroy a counters handle
 .nf
 .B #include <infiniband/verbs.h>
 .sp
-.BI "struct ibv_counters *ibv_create_counters(struct ibv_context " "*context");
+.BI "struct ibv_counters *ibv_create_counters(struct ibv_context " "*context" ", struct ibv_counter_init_attr " "*counter_init_attr");
 .sp
 .BI "int ibv_destroy_counters(struct ibv_counters " "*counters");
 .fi
@@ -16,6 +16,22 @@ ibv_create_counters, ibv_destroy_counters \- create or destroy a counters handle
 .B ibv_create_counters()
 creates a new counters handle for the RDMA device context 
 .I context\fR.
+.sp
+The argument
+.I counter_init_attr
+is an ibv_counter_init_attr struct, as defined in verbs.h:
+.sp
+.PP
+.nf
+struct ibv_counter_init_attr {
+.in +8
+int comp_mask;
+.in -8
+};
+.fi
+.PP
+.sp
+
 .sp
 An
 .I ibv_counters 
@@ -45,8 +61,10 @@ Counters are cleared upon creation and values will be monotonically increasing.
 .sp
 .B ibv_destroy_counters()
 releases the counters handle 
-.I counters 
-and will detached the counters from any other resource.
+.I counters\fR. 
+User should detach all
+.I index\fR's
+before destorying this counter. 
 .SH "RETURN VALUE"
 .B ibv_create_counters() 
 returns a pointer to the allocated ibv_counters object, or NULL if the request fails (and sets errno to indicates the failure reason).
@@ -79,4 +97,4 @@ is shown in
 .BR ibv_create_qp_ex (3),
 .SH "AUTHORS"
 .TP
-Alex Rosenbaum <rosenbaumalex@gmail.com>
+Alex Rosenbaum <alexr@mellanox.com>

@@ -2565,13 +2565,13 @@ enum ibv_counter_type {
 };
 
 struct ibv_counter_init_attr {
-	int flags;
+	int comp_mask;
 };
 
 struct ibv_counter_attach_attr {
 	enum ibv_counter_type counter_type;
 	int index;
-	int flags;
+	int comp_mask;
 };
 
 struct ibv_counters *ibv_create_counters(struct ibv_context *context, struct ibv_counter_init_attr *attr);

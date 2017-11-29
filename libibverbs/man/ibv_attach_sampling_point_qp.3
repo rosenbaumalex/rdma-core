@@ -10,11 +10,11 @@ ibv_detach_sampling_point \- detach individual counter definition
 .nf
 .B #include <infiniband/verbs.h>
 .sp
-.BI "int ibv_attach_sampling_point_qp(struct ibv_counters " "*counters" ", int " "index" ", struct ibv_qp " "*qp" ", enum ibv_counter_type " "counter_type");
+.BI "int ibv_attach_sampling_point_qp(struct ibv_counters " "*counters" ", struct ibv_counter_attach_attr " "*counter_attach_attr" ", struct ibv_qp " "*qp");
 .sp 
-.BI "int ibv_attach_sampling_point_wq(struct ibv_counters " "*counters" ", int " "index" ", struct ibv_wq " "*wp" ", enum ibv_counter_type " "counter_type");
+.BI "int ibv_attach_sampling_point_wq(struct ibv_counters " "*counters" ", struct ibv_counter_attach_attr " "*counter_attach_attr" ", struct ibv_wq " "*wp");
 .sp 
-.BI "int ibv_attach_sampling_point_flow(struct ibv_counters " "*counters" ", int " "index" ", struct ibv_flow " "*flow" ", enum ibv_counter_type " "counter_type");
+.BI "int ibv_attach_sampling_point_flow(struct ibv_counters " "*counters" ", struct ibv_counter_attach_attr " "*counter_attach_attr" ", struct ibv_flow " "*flow");
 .sp
 .BI "int ibv_detach_sampling_point(struct ibv_counters " "*counters" ", int " "index");
 .fi
@@ -28,6 +28,22 @@ in the
 object. Each sampling point
 .I index
 location is a monotonically increasing value.
+.sp
+The argument
+.I counter_attach_attr
+is an ibv_counter_attach_attr struct, as defined in verbs.h:
+.sp
+.PP
+.nf
+struct ibv_counter_attach_attr {
+.in +8
+enum ibv_counter_type counter_type;
+int index;
+int comp_mask;
+.in -8
+};
+.fi
+.PP
 .sp
 .B ibv_attach_sampling_point_qp()
 will start collecting values which are reported from the
@@ -125,4 +141,4 @@ is shown in
 .BR ibv_create_qp_ex (3),
 .SH "AUTHORS"
 .TP
-Alex Rosenbaum <rosenbaumalex@gmail.com>
+Alex Rosenbaum <alexr@mellanox.com>
