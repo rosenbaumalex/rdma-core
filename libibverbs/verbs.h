@@ -505,7 +505,7 @@ enum ibv_wc_flags {
 	IBV_WC_TM_SYNC_REQ	= 1 << 4,
 	IBV_WC_TM_MATCH		= 1 << 5,
 	IBV_WC_TM_DATA_VALID	= 1 << 6,
-	IBV_WC_MP_CONSUMED_WR	= 1 << 7,
+	IBV_WC_MP_RQ_CONSUMED_WR= 1 << 7,
 };
 
 struct ibv_wc {
@@ -674,9 +674,9 @@ struct ibv_ah_attr {
 	uint8_t			port_num;
 };
 
-struct ibv_multi_stride_wr_attr {
-	uint32_t buffer_sz; /* size in bytes of the entier wr buffer */
-	uint32_t stride_sz; /* bytes of each stride in a wr buffer */
+struct ibv_mp_rq_attr {
+	size_t			buffer_sz; /* size in bytes of the entier wr buffer */
+	uint32_t		min_align_sz; /* min bytes for alignment of a new packet in the wr buffer */
 };
 
 enum ibv_srq_attr_mask {
@@ -726,7 +726,7 @@ struct ibv_srq_init_attr_ex {
 	struct ibv_xrcd	       *xrcd;
 	struct ibv_cq	       *cq;
 	struct ibv_tm_cap	tm_cap;
-	struct ibv_multi_stride_wr_attr mp_rq; /* with IBV_SRQ_INIT_ATTR_MP_RQ */
+	struct ibv_mp_rq_attr	mp_rq; /* with IBV_SRQ_INIT_ATTR_MP_RQ */
 };
 
 enum ibv_wq_type {
@@ -756,7 +756,7 @@ struct ibv_wq_init_attr {
 	struct	ibv_cq	       *cq;
 	uint32_t		comp_mask; /* Use ibv_wq_init_attr_mask */
 	uint32_t		create_flags; /* use ibv_wq_flags */
-	struct ibv_multi_stride_wr_attr mp_rq; /* with IBV_WQ_INIT_ATTR_MP_RQ */
+	struct ibv_mp_rq_attr	mp_rq; /* with IBV_WQ_INIT_ATTR_MP_RQ */
 };
 
 enum ibv_wq_state {
@@ -2330,8 +2330,8 @@ int ibv_destroy_qp(struct ibv_qp *qp);
  * consume multiple strides per single receive. A completion is
  * generate per packet. ibv_wc_read_mp_wr_offset() will report the bytes
  * offset into the buffer.
- * A flag IBV_WC_MP_CONSUMED_WR is reported once all strides in WR buffer are
- * consumed, so that user knows the device released that buffer WR (wr_id).
+ * A flag IBV_WC_MP_RQ_CONSUMED_WR is reported once all strides in WR buffer
+ * are consumed, so that user knows the device released that wr_id buffer.
  *
  * Return Value
  * ibv_create_wq() returns a pointer to the created WQ, or NULL if the request
