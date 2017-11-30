@@ -505,7 +505,7 @@ enum ibv_wc_flags {
 	IBV_WC_TM_SYNC_REQ	= 1 << 4,
 	IBV_WC_TM_MATCH		= 1 << 5,
 	IBV_WC_TM_DATA_VALID	= 1 << 6,
-	IBV_WC_MP_RQ_CONSUMED_WR= 1 << 7,
+	IBV_WC_MP_WR_CONSUMED	= 1 << 7,
 };
 
 struct ibv_wc {
@@ -674,8 +674,8 @@ struct ibv_ah_attr {
 	uint8_t			port_num;
 };
 
-struct ibv_mp_rq_attr {
-	size_t			buffer_sz; /* size in bytes of the entier wr buffer */
+struct ibv_mp_wr_attr {
+	size_t			buffer_sz; /* size in bytes of the entire wr buffer */
 	uint32_t		min_align_sz; /* min bytes for alignment of a new packet in the wr buffer */
 };
 
@@ -707,7 +707,7 @@ enum ibv_srq_init_attr_mask {
 	IBV_SRQ_INIT_ATTR_XRCD		= 1 << 2,
 	IBV_SRQ_INIT_ATTR_CQ		= 1 << 3,
 	IBV_SRQ_INIT_ATTR_TM		= 1 << 4,
-	IBV_SRQ_INIT_ATTR_MP_RQ		= 1 << 5,
+	IBV_SRQ_INIT_ATTR_MP_WR		= 1 << 5,
 	IBV_SRQ_INIT_ATTR_RESERVED	= 1 << 6,
 };
 
@@ -726,7 +726,7 @@ struct ibv_srq_init_attr_ex {
 	struct ibv_xrcd	       *xrcd;
 	struct ibv_cq	       *cq;
 	struct ibv_tm_cap	tm_cap;
-	struct ibv_mp_rq_attr	mp_rq; /* with IBV_SRQ_INIT_ATTR_MP_RQ */
+	struct ibv_mp_wr_attr	mp_wr; /* with IBV_SRQ_INIT_ATTR_MP_WR */
 };
 
 enum ibv_wq_type {
@@ -735,7 +735,7 @@ enum ibv_wq_type {
 
 enum ibv_wq_init_attr_mask {
 	IBV_WQ_INIT_ATTR_FLAGS		= 1 << 0,
-	IBV_WQ_INIT_ATTR_MP_RQ		= 1 << 1,
+	IBV_WQ_INIT_ATTR_MP_WR		= 1 << 1,
 	IBV_WQ_INIT_ATTR_RESERVED	= 1 << 2,
 };
 
@@ -756,7 +756,7 @@ struct ibv_wq_init_attr {
 	struct	ibv_cq	       *cq;
 	uint32_t		comp_mask; /* Use ibv_wq_init_attr_mask */
 	uint32_t		create_flags; /* use ibv_wq_flags */
-	struct ibv_mp_rq_attr	mp_rq; /* with IBV_WQ_INIT_ATTR_MP_RQ */
+	struct ibv_mp_wr_attr	mp_wr; /* with IBV_WQ_INIT_ATTR_MP_WR */
 };
 
 enum ibv_wq_state {
@@ -1216,7 +1216,7 @@ struct ibv_cq_ex {
 	uint64_t (*read_completion_ts)(struct ibv_cq_ex *current);
 	uint16_t (*read_cvlan)(struct ibv_cq_ex *current);
 	uint32_t (*read_flow_tag)(struct ibv_cq_ex *current);
-	uint32_t (*read_mp_wr_offset)(struct ibv_cq_ex *cq)
+	size_t  (*read_mp_wr_offset)(struct ibv_cq_ex *cq)
 	void (*read_tm_info)(struct ibv_cq_ex *current,
 			     struct ibv_wc_tm_info *tm_info);
 };
@@ -1331,7 +1331,7 @@ static inline uint32_t ibv_wc_read_flow_tag(struct ibv_cq_ex *cq)
 	return cq->read_flow_tag(cq);
 }
 
-static inline uint32_t ibv_wc_read_mp_wr_offset(struct ibv_cq_ex *cq)
+static inline size_t ibv_wc_read_mp_wr_offset(struct ibv_cq_ex *cq)
 {
 	return cq->read_mp_wr_offset(cq);
 }
@@ -2323,15 +2323,6 @@ int ibv_destroy_qp(struct ibv_qp *qp);
  * on return.
  * If ibv_create_wq() succeeds, then max_wr and max_sge will always be
  * at least as large as the requested values.
- *
- * A IBV_WQ_INIT_ATTR_MP_RQ defines the RQ for receiving multiple packets
- * within a single struct ibv_recv_wr. struct ibv_multi_stride_wr_attr
- * describes a buffer which is built from multiple strides. A MP RQ can
- * consume multiple strides per single receive. A completion is
- * generate per packet. ibv_wc_read_mp_wr_offset() will report the bytes
- * offset into the buffer.
- * A flag IBV_WC_MP_RQ_CONSUMED_WR is reported once all strides in WR buffer
- * are consumed, so that user knows the device released that wr_id buffer.
  *
  * Return Value
  * ibv_create_wq() returns a pointer to the created WQ, or NULL if the request

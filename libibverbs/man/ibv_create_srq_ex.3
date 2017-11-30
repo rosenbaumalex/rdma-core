@@ -31,6 +31,7 @@ struct ibv_pd          *pd;             /* PD associated with the SRQ */
 struct ibv_xrcd        *xrcd;           /* XRC domain to associate with the SRQ */
 struct ibv_cq          *cq;             /* CQ to associate with the SRQ for XRC mode */
 struct ibv_tm_cap       tm_cap;         /* Tag matching attributes */
+struct ibv_mp_wr_attr   mp_wr;          /* with IBV_SRQ_INIT_ATTR_MP_WR defines the SRQ as Multi Packet WR */
 .in -8
 };
 .sp
@@ -52,6 +53,13 @@ uint32_t                max_ops;        /* Number of outstanding tag list operat
 };
 .sp
 .nf
+struct ibv_mp_wr_attr {
+size_t                  buffer_sz; /* size in bytes of the entire wr buffer */
+uint32_t                min_align_sz; /* min bytes for alignment of a new packet in the wr buffer */
+.in -8
+};
+.sp
+.nf
 .fi
 .PP
 The function
@@ -61,6 +69,16 @@ will update the
 struct with the original values of the SRQ that was created; the
 values of max_wr and max_sge will be greater than or equal to the
 values requested.
+.sp
+A SRQ can be created with support for multi-packet work requests by setting the IBV_SRQ_INIT_ATTR_MP_WR
+.I comp_mask\fR.
+A multi-packet work request can receive multiple packets in a single ibv_recv_wr.
+.I mp_wr
+values describes a buffer which is built from multiple aligned segments. 
+Multiple completion can be generated, one per received packet. ibv_wc_read_mp_wr_offset() will report the bytes offset in the buffer of the respecful wr_id.
+A flag IBV_WC_MP_WR_CONSUMED is reported once the entire WR buffer is consumed, so that user knows the device released that wr_id buffer.
+.I cq
+must be created from type ibv_cq_ex so the new CQ values could be read.
 .PP
 .B ibv_destroy_srq()
 destroys the SRQ
