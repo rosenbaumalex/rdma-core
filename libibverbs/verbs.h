@@ -287,6 +287,11 @@ struct ibv_cq_moderation_caps {
 	uint16_t max_cq_period; /* in micro seconds */
 };
 
+struct ibv_mp_wr_cap {
+	size_t			max_buffer_sz; /* max size in bytes supported for entire buffer of a single mp wr */
+	uint32_t		max_align_sz; /* max bytes supported for alignment of a new message in a mp wr buffer */
+};
+
 struct ibv_device_attr_ex {
 	struct ibv_device_attr	orig_attr;
 	uint32_t		comp_mask;
@@ -301,6 +306,7 @@ struct ibv_device_attr_ex {
 	uint32_t		raw_packet_caps; /* Use ibv_raw_packet_caps */
 	struct ibv_tm_caps	tm_caps;
 	struct ibv_cq_moderation_caps  cq_mod_caps;
+	struct ibv_mp_wr_cap	mp_wr_cap;
 };
 
 enum ibv_mtu {
@@ -675,8 +681,8 @@ struct ibv_ah_attr {
 };
 
 struct ibv_mp_wr_attr {
-	size_t			buffer_sz; /* size in bytes of the entire wr buffer */
-	uint32_t		min_align_sz; /* min bytes for alignment of a new packet in the wr buffer */
+	size_t			buffer_sz; /* size in bytes of the entire buffer of a single mp wr */
+	uint32_t		min_align_sz; /* min bytes for alignment of a new message in the mp wr buffer */
 };
 
 enum ibv_srq_attr_mask {
@@ -726,7 +732,7 @@ struct ibv_srq_init_attr_ex {
 	struct ibv_xrcd	       *xrcd;
 	struct ibv_cq	       *cq;
 	struct ibv_tm_cap	tm_cap;
-	struct ibv_mp_wr_attr	mp_wr; /* with IBV_SRQ_INIT_ATTR_MP_WR */
+	struct ibv_mp_wr_attr  *mp_wr; /* with IBV_SRQ_INIT_ATTR_MP_WR */
 };
 
 enum ibv_wq_type {
@@ -756,7 +762,7 @@ struct ibv_wq_init_attr {
 	struct	ibv_cq	       *cq;
 	uint32_t		comp_mask; /* Use ibv_wq_init_attr_mask */
 	uint32_t		create_flags; /* use ibv_wq_flags */
-	struct ibv_mp_wr_attr	mp_wr; /* with IBV_WQ_INIT_ATTR_MP_WR */
+	struct ibv_mp_wr_attr  *mp_wr; /* with IBV_WQ_INIT_ATTR_MP_WR */
 };
 
 enum ibv_wq_state {
@@ -846,7 +852,8 @@ enum ibv_qp_init_attr_mask {
 	IBV_QP_INIT_ATTR_MAX_TSO_HEADER = 1 << 3,
 	IBV_QP_INIT_ATTR_IND_TABLE	= 1 << 4,
 	IBV_QP_INIT_ATTR_RX_HASH	= 1 << 5,
-	IBV_QP_INIT_ATTR_RESERVED	= 1 << 6
+	IBV_QP_INIT_ATTR_MP_WR		= 1 << 6,
+	IBV_QP_INIT_ATTR_RESERVED	= 1 << 7
 };
 
 enum ibv_qp_create_flags {
@@ -883,6 +890,7 @@ struct ibv_qp_init_attr_ex {
 	struct ibv_rwq_ind_table       *rwq_ind_tbl;
 	struct ibv_rx_hash_conf	rx_hash_conf;
 	uint32_t		source_qpn;
+	struct ibv_mp_wr_attr  *mp_wr; // with IBV_QP_INIT_ATTR_MP_WR (not valid with ibv_srq)
 };
 
 enum ibv_qp_open_attr_mask {

@@ -39,6 +39,7 @@ uint16_t                max_tso_header; /* Maximum TSO header size */
 struct ibv_rwq_ind_table *rwq_ind_tbl;  /* Indirection table to be associated with the QP */
 struct ibv_rx_hash_conf  rx_hash_conf;  /* RX hash configuration to be used */
 uint32_t                source_qpn;     /* Source QP number, creation flag IBV_QP_CREATE_SOURCE_QPN should be set, few NOTEs below */
+struct ibv_mp_wr_attr  *mp_wr;          /* with IBV_QP_INIT_ATTR_MP_WR (not valid with ibv_srq) */
 .in -8
 };
 .sp
@@ -71,6 +72,13 @@ uint8_t                *rx_hash_key;           /* RX hash key data */
 uint64_t               rx_hash_fields_mask;    /* RX fields that should participate in the hashing, use enum ibv_rx_hash_fields */
 .in -8
 };
+.nf
+struct ibv_mp_wr_attr {
+.in +8
+size_t                  buffer_sz; /* size in bytes of the entire buffer of a single mp wr */
+uint32_t                min_align_sz; /* min bytes for alignment of a new message in the mp wr buffer */
+.in -8
+};
 .fi
 .PP
 The function
@@ -78,7 +86,21 @@ The function
 will update the
 .I qp_init_attr_ex\fB\fR->cap
 struct with the actual \s-1QP\s0 values of the QP that was created;
-the values will be greater than or equal to the values requested.
+the values will be greater than or equal to the values requested. Similarly, the
+.I mp_wr
+values, buffer_sz and min_align_sz, will get updated with greater than or equal to the values requested.
+.sp
+A QP can be created with support for multi-packet work requests by setting the IBV_QP_INIT_ATTR_MP_WR
+.I comp_mask\fR.
+A multi-packet work request can receive multiple message in a single ibv_recv_wr. The max number of messages a single mp wr will receive is determind by the size of the
+.I buffer_sz
+divided by the
+.I min_align_sz\fR,
+which define the number of aligned segments.
+Multiple completion can be generated, one per received message. ibv_wc_read_mp_wr_offset() will report the bytes offset in the buffer of the respecful wr_id.
+A flag IBV_WC_MP_WR_CONSUMED is reported once the entire WR buffer is consumed, so that user knows the device released that wr_id buffer.
+.I cq
+must be created from type ibv_cq_ex so the new CQ values could be read.
 .PP
 .B ibv_destroy_qp()
 destroys the QP
