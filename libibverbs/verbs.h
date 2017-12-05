@@ -483,6 +483,7 @@ enum ibv_create_cq_wc_flags {
 	IBV_WC_EX_WITH_CVLAN		= 1 << 8,
 	IBV_WC_EX_WITH_FLOW_TAG		= 1 << 9,
 	IBV_WC_EX_WITH_TM_INFO		= 1 << 10,
+	IBV_WC_EX_WITH_MP_WR		= 1 << 11,
 };
 
 enum {
@@ -511,7 +512,8 @@ enum ibv_wc_flags {
 	IBV_WC_TM_SYNC_REQ	= 1 << 4,
 	IBV_WC_TM_MATCH		= 1 << 5,
 	IBV_WC_TM_DATA_VALID	= 1 << 6,
-	IBV_WC_MP_WR_CONSUMED	= 1 << 7,
+	IBV_WC_MP_WR_MORE_IN_MSG= 1 << 7,
+	IBV_WC_MP_WR_CONSUMED	= 1 << 8,
 };
 
 struct ibv_wc {

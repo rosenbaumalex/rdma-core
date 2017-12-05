@@ -43,6 +43,7 @@ enum ibv_wc_flags_ex {
         IBV_WC_EX_WITH_COMPLETION_TIMESTAMP  = 1 << 7,  /* Require completion timestamp in WC /*
         IBV_WC_EX_WITH_CVLAN                 = 1 << 8,  /* Require VLAN info in WC */
         IBV_WC_EX_WITH_FLOW_TAG		     = 1 << 9,  /* Require flow tag in WC */
+        IBV_WC_EX_WITH_MP_WR                 = 1 << 10, /* Require multi-packet WR reporting of flags and offset */
 };
 
 enum ibv_cq_init_attr_mask {
@@ -117,7 +118,7 @@ Below members and functions are used in order to poll the current completion. Th
  Get the source QP number field from the current completion.
 
 .BI "int ibv_wc_read_wc_flags(struct ibv_cq_ex " "*cq"); \c
- Get the QP flags field from the current completion.
+ Get the QP flags field from the current completion as defined in ibv_wc_flags.
 
 .BI "uint16_t ibv_wc_read_pkey_index(struct ibv_cq_ex " "*cq"); \c
  Get the pkey index field from the current completion.
@@ -140,6 +141,9 @@ Below members and functions are used in order to poll the current completion. Th
 .BI "uint32_t ibv_wc_read_flow_tag(struct ibv_cq_ex " "*cq"); \c
  Get flow tag from the current completion.
 
+.BI "size_t ibv_wc_read_mp_wr_offset(struct ibv_cq_ex " *cq ",); \c
+ Get bytes offset from start of buffer for a multi-packet work request.
+
 .BI "void ibv_wc_read_tm_info(struct ibv_cq_ex " *cq ","
 .BI "struct ibv_wc_tm_info " *tm_info "); \c
  Get tag matching info from the current completion.
@@ -150,7 +154,8 @@ uint64_t tag;  /* tag from TMH */
 uint32_t priv; /* opaque user data from TMH */
 .in -8
 };
-
+.nf
+.fi
 .SH "RETURN VALUE"
 .B ibv_create_cq_ex()
 returns a pointer to the CQ, or NULL if the request fails.
@@ -158,6 +163,15 @@ returns a pointer to the CQ, or NULL if the request fails.
 .B ibv_create_cq_ex()
 may create a CQ with size greater than or equal to the requested
 size. Check the cqe attribute in the returned CQ for the actual size.
+.TP
+.B IBV_WC_EX_WITH_MP_WR\fR will request completion flags reporting for a multi-packet work requests:
+
+.BI IBV_WC_MP_WR_MORE_IN_MSG \c
+ is reported by a multi-packet work request that has more packet completions expected in this message for this qp_num (when message is larger then MTU).
+
+.BI IBV_WC_MP_WR_CONSUMED \c
+ is reported once the entire buffer of a multi-packet work request is consumed, so that user knows the device released that wr_id buffer.
+
 .PP
 CQ should be destroyed with ibv_destroy_cq.
 .PP

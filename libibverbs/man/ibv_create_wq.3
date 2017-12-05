@@ -55,20 +55,19 @@ size_t                  buffer_sz; /* size in bytes of the entire buffer of a si
 uint32_t                min_align_sz; /* min bytes for alignment of a new message in the mp wr buffer */
 .in -8
 };
+.sp
 .nf
 .fi
-.sp
 A IBV_WQT_RQ can be created with support for multi-packet work requests by setting the IBV_WQ_INIT_ATTR_MP_WR
 .I comp_mask\fR.
-A multi-packet work request can receive multiple message in a single ibv_recv_wr. The max number of messages a single mp wr will receive is determind by the size of the
+A multi-packet work request can receive multiple packets within a single ibv_recv_wr. The max number of packets a single MP_WR will receive is determined by the size of the
 .I buffer_sz
 divided by the
 .I min_align_sz\fR,
-which define the number of aligned segments.
-Multiple completion can be generated, one per received message. ibv_wc_read_mp_wr_offset() will report the bytes offset in the buffer of the respecful wr_id.
-A flag IBV_WC_MP_WR_CONSUMED is reported once the entier WR buffer is consumed, so that user knows the device released that wr_id buffer.
+which defines the number of aligned segments.
+Multiple completions can be generated for a single ibv_recv_wr, one per received packet. ibv_wc_flags will report the extra MP_WR completion flags and ibv_wc_read_mp_wr_offset() will report the bytes offset in the buffer of the respectful ibv_recv_wr.
 .I cq
-must be created from type ibv_cq_ex so the new CQ values could be read.
+must be created as ibv_cq_ex with the IBV_WC_EX_WITH_MP_WR flag in order to handle the additional multi-packet WR's info.
 .PP
 The function
 .B ibv_create_wq()
